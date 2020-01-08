@@ -1,25 +1,22 @@
-require 'faraday'
+require 'rest-client'
 require 'json'
 
-API_URL = "http://api.theysaidso.com/qod.json"
+API_URL = "http://quotes.rest/qod.json"
 
-class Theysaidso::QOD
-  attr_reader :id, :quote, :author, :length, :tags, :success, :category
+module Theysaidso
+  class QOD
+    def self.fetch(api_key = nil)
+      response = RestClient.get(API_URL, headers={ "X-TheySaidSo-Api-Secret": api_key})
+      response_json = JSON.parse(response.body)
 
-  def initialize(attrs)
-    @id       = attrs['contents']['id']
-    @quote    = attrs['contents']['quote']
-    @author   = attrs['contents']['author']
-    @length   = attrs['contents']['length']
-    @tags     = attrs['contents']['tags']
-    @categroy = attrs['contents']['categroy']
-    @success  = attrs['success']['total']
-  end
+      # Quote of the day will always be one quote
+      quotes = []
+      response_json['contents']['quotes'].each do |q|
+        quotes.push(Theysaidso::Quote.new(q))
+      end
 
-  def self.fetch
-    response = Faraday.get(API_URL)
-    attrs = JSON.parse(response.body)
-    new(attrs)
+      return quotes
+    end
   end
 end
 
